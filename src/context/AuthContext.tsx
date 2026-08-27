@@ -11,7 +11,7 @@ interface AuthContextType {
   loading: boolean;
 }
 
-const ADMIN_EMAILS = ["tellexaiofficial@gmail.com"];
+const ADMIN_EMAILS = ["safwanhashim273@gmail.com"];
 
 const AUTH_CACHE_KEY = "tellex_auth_cache";
 

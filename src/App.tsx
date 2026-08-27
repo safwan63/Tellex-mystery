@@ -1,6 +1,7 @@
 import { useState, useEffect, lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import PrivateRoute from './components/PrivateRoute';
+import AdminRoute from './components/AdminRoute';
 import ErrorBoundary from './components/ErrorBoundary';
 
 // Lazy load all pages to drastically reduce the initial bundle size
@@ -129,8 +130,8 @@ function App() {
             <Route path="/my-orders" element={<PrivateRoute><MyOrders /></PrivateRoute>} />
             
             {/* Admin Routes */}
-            <Route path="/admin" element={<PrivateRoute><AdminDashboard /></PrivateRoute>} />
-            <Route path="/admin/orders" element={<PrivateRoute><AdminOrders /></PrivateRoute>} />
+            <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
+            <Route path="/admin/orders" element={<AdminRoute><AdminOrders /></AdminRoute>} />
             
             {/* Catch-all for existing state-based pages */}
             <Route path="*" element={<LegacyApp />} />
