@@ -21,6 +21,8 @@ const Flow = lazy(() => import('./pages/Flow'));
 const MyOrders = lazy(() => import('./pages/MyOrders'));
 const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
 const AdminOrders = lazy(() => import('./pages/AdminOrders'));
+const BookCatalog = lazy(() => import('./pages/BookCatalog'));
+const BookDetails = lazy(() => import('./pages/BookDetails'));
 
 // Reusable animated fallback UI while chunks download
 const PageLoader = () => (
@@ -132,6 +134,10 @@ function App() {
             {/* Admin Routes */}
             <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
             <Route path="/admin/orders" element={<AdminRoute><AdminOrders /></AdminRoute>} />
+            
+            {/* Catalog Routes */}
+            <Route path="/books" element={<BookCatalog />} />
+            <Route path="/books/:id" element={<BookDetails />} />
             
             {/* Catch-all for existing state-based pages */}
             <Route path="*" element={<LegacyApp />} />
