@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { Menu, X, ShoppingCart, User } from 'lucide-react';
+import { Menu, X, ShoppingCart, User, Search } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import UserAvatar from './UserAvatar';
 
 const NAV_LINKS = [
@@ -14,13 +14,19 @@ const NAV_LINKS = [
 export default function Navbar() {
   const { user, isAdmin } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
   const [currentPath, setCurrentPath] = useState(window.location.pathname);
 
   useEffect(() => {
     const updatePath = () => {
       setCurrentPath(window.location.pathname);
+      if (window.location.pathname === '/books') {
+        const q = new URLSearchParams(window.location.search).get('q');
+        setSearchQuery(q || '');
+      }
     };
 
     window.addEventListener('popstate', updatePath);
@@ -55,6 +61,14 @@ export default function Navbar() {
         ? 'bg-[#0E462B] text-white font-bold shadow-sm'
         : 'text-gray-600 hover:text-[#0E462B] hover:bg-transparent'
     }`;
+  };
+
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      navigate(`/books?q=${encodeURIComponent(searchQuery.trim())}`);
+      setIsOpen(false);
+    }
   };
 
   const iconButtonClass =
@@ -109,8 +123,22 @@ export default function Navbar() {
               ))}
             </nav>
 
-            {/* Cart, account, mobile menu */}
+            {/* Search, Cart, account, mobile menu */}
             <div className="flex items-center justify-end gap-0.5 sm:gap-1 shrink-0">
+              {/* Desktop Search */}
+              <form onSubmit={handleSearchSubmit} className="hidden lg:flex relative items-center mr-2">
+                <input
+                  type="text"
+                  placeholder="Search books..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-48 xl:w-64 pl-4 pr-10 py-2 bg-gray-50 border border-gray-200 rounded-full text-sm focus:outline-none focus:border-[#0E462B] focus:ring-1 focus:ring-[#0E462B] transition-all"
+                />
+                <button type="submit" className="absolute right-3 text-gray-400 hover:text-[#0E462B]">
+                  <Search size={18} />
+                </button>
+              </form>
+
               <a
                 href="/my-orders"
                 onClick={(e) => {
@@ -159,7 +187,21 @@ export default function Navbar() {
         {/* Mobile menu */}
         {isOpen && (
           <div className="md:hidden border-t border-gray-100 bg-white">
-            <div className="max-w-[1400px] mx-auto px-4 sm:px-6 pb-4 pt-2 space-y-0.5">
+            <div className="max-w-[1400px] mx-auto px-4 sm:px-6 pb-4 pt-4 space-y-2">
+              {/* Mobile Search */}
+              <form onSubmit={handleSearchSubmit} className="relative flex items-center mb-4">
+                <input
+                  type="text"
+                  placeholder="Search books..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-4 pr-10 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-[#0E462B]"
+                />
+                <button type="submit" className="absolute right-4 text-gray-400">
+                  <Search size={20} />
+                </button>
+              </form>
+
               {NAV_LINKS.map(({ href, label }) => (
                 <a
                   key={href}

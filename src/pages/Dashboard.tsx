@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Book, Sparkles } from 'lucide-react';
+import { Book, Sparkles, Search } from 'lucide-react';
 import UserAvatar from '../components/UserAvatar';
 
 // Prefetch the Flow page chunk as soon as Dashboard loads
@@ -74,15 +74,23 @@ export default function Dashboard() {
             <h3 className="text-2xl font-bold text-[#0E462B] mb-3" style={{ fontFamily: "'Playfair Display', serif" }}>
               Mystery Pick
             </h3>
-            <p className="text-gray-600 mb-8 flex-grow">
+            <p className="text-gray-600 mb-6 flex-grow">
               Share your mood and vibe. We'll hand-select a secret book tailored to your emotional state and deliver it to your door.
             </p>
-            <Link 
-              to="/flow?type=mystery"
-              className="inline-flex justify-center items-center w-full py-3.5 px-4 rounded-lg bg-[#0E462B] text-[#e1cfbc] font-medium hover:bg-[#0E462B]/90 transition-colors shadow-sm"
-            >
-              Start Mystery Pick
-            </Link>
+            <div className="flex flex-col gap-3">
+              <Link 
+                to="/flow?type=mystery"
+                className="inline-flex justify-center items-center w-full py-3.5 px-4 rounded-lg bg-[#0E462B] text-[#e1cfbc] font-medium hover:bg-[#0E462B]/90 transition-colors shadow-sm"
+              >
+                Reveal my pick
+              </Link>
+              <Link 
+                to="/books"
+                className="inline-flex justify-center items-center w-full py-3.5 px-4 rounded-lg border-2 border-[#0E462B] text-[#0E462B] font-medium hover:bg-[#0E462B]/5 transition-colors shadow-sm gap-2"
+              >
+                <Search size={18} /> Search my pick
+              </Link>
+            </div>
           </div>
         </div>
       </main>

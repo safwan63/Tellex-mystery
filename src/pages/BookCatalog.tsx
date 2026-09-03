@@ -4,22 +4,24 @@ import { getBooks } from '../services/bookService';
 import BookCard from '../components/books/BookCard';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
+import { useSearchParams } from 'react-router-dom';
 import { Search, BookX, Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 export default function BookCatalog() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [books, setBooks] = useState<Book[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
 
   useEffect(() => {
     const fetchBooks = async () => {
       try {
         const fetchedBooks = await getBooks();
         setBooks(fetchedBooks);
-      } catch (err) {
-        setError('Failed to load the book catalog. Please try again later.');
+      } catch (err: any) {
+        setError(`Failed to load the book catalog: ${err.message || 'Unknown error'}. Please try again later.`);
       } finally {
         setLoading(false);
       }
@@ -91,7 +93,14 @@ export default function BookCatalog() {
               className="block w-full pl-11 pr-4 py-4 bg-white border-2 border-[#E5E5E0] rounded-2xl leading-5 bg-transparent placeholder-gray-500 focus:outline-none focus:border-[#0E462B] focus:ring-0 sm:text-md transition-colors shadow-sm"
               placeholder="Search by title, author, topic, or feeling (e.g. 'procrastination')"
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                if (e.target.value) {
+                  setSearchParams({ q: e.target.value });
+                } else {
+                  setSearchParams({});
+                }
+              }}
             />
           </motion.div>
         </div>
@@ -119,7 +128,10 @@ export default function BookCatalog() {
               Try exploring different keywords like "habits", "success", or "mindfulness".
             </p>
             <button 
-              onClick={() => setSearchQuery('')}
+              onClick={() => {
+                setSearchQuery('');
+                setSearchParams({});
+              }}
               className="mt-6 px-6 py-2 bg-[#0E462B]/10 text-[#0E462B] font-semibold rounded-lg hover:bg-[#0E462B]/20 transition-colors"
             >
               Clear Search
