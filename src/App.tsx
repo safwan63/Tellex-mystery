@@ -23,6 +23,9 @@ const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
 const AdminOrders = lazy(() => import('./pages/AdminOrders'));
 const BookCatalog = lazy(() => import('./pages/BookCatalog'));
 const BookDetails = lazy(() => import('./pages/BookDetails'));
+const SemanticTest = lazy(() => import('./pages/SemanticTest'));
+const Matches = lazy(() => import('./pages/Matches'));
+const RecommendTest = lazy(() => import('./pages/RecommendTest'));
 
 // Reusable animated fallback UI while chunks download
 const PageLoader = () => (
@@ -138,6 +141,14 @@ function App() {
             {/* Catalog Routes */}
             <Route path="/books" element={<BookCatalog />} />
             <Route path="/books/:id" element={<BookDetails />} />
+            
+            {/* Developer Tools */}
+            <Route path="/semantic-test" element={<SemanticTest />} />
+            <Route path="/recommend-test" element={<RecommendTest />} />
+            
+            {/* Matches / Phase 4 Recommendations */}
+            <Route path="/matches" element={<Matches />} />
+
             
             {/* Catch-all for existing state-based pages */}
             <Route path="*" element={<LegacyApp />} />

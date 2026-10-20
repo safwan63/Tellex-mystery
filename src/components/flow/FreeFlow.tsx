@@ -25,28 +25,11 @@ const budgetSchema = z.object({
   budget: z.string().optional(),
 });
 
-const deliverySchema = z.object({
-  firstName: z.string().min(2, "First name is required"),
-  lastName: z.string().min(2, "Last name is required"),
-  address: z.string().min(10, "Full address is required"),
-  city: z.string().min(2, "City is required"),
-  pincode: z.string().regex(/^[0-9]{6}$/, "Must be a 6 digit pincode"),
-  whatsapp: z.string().regex(/^[0-9]{10}$/, "Must be a valid 10 digit number"),
-  alternativeNo: z.string().regex(/^[0-9]{10}$/, "Must be a valid 10 digit number"),
-}).refine((data) => data.whatsapp !== data.alternativeNo, {
-  message: "Phone No cannot be the same as WhatsApp number",
-  path: ["alternativeNo"],
-});
-
 const fullSchema = z.object({
   ...vibeSchema.shape,
   ...followUpSchema.shape,
   ...budgetSchema.shape,
   bookQuantity: z.string().min(1, "Please select the quantity of books"),
-  ...deliverySchema.shape,
-}).refine((data) => data.whatsapp !== data.alternativeNo, {
-  message: "Phone No cannot be the same as WhatsApp number",
-  path: ["alternativeNo"],
 });
 
 type FormData = z.infer<typeof fullSchema>;
@@ -137,45 +120,30 @@ export default function FreeFlow({ type, language, onBack }: Props) {
     setIsSubmitting(true);
     
     try {
-
-      await addDoc(collection(db, "orders"), {
-        userId: user?.uid || "anonymous",
-        type: type, 
-        status: "confirmed",
-        mood: data.vibe,
-        mode: "free",
-        budget: parseInt(data.budget || "389"),
-        answers: {
-          vibe: data.vibe,
-          bookType: data.bookType || "Any",
-          avoidTrigger: data.avoidTrigger || "None",
-          readBooks: data.readBooks,
-          bookQuantity: data.bookQuantity,
-          budget: parseInt(data.budget || "389"),
-          language: language
-        },
-        riasecScores: { I:0, A:0, S:0, E:0, C:0, R:0 }, // Unscored for free flow
-        topTypes: [], 
-        response: insight.response,
-        delivery: {
-          firstName: data.firstName,
-          lastName: data.lastName,
-          address: data.address,
-          city: data.city,
-          pincode: data.pincode,
-          whatsapp: data.whatsapp,
-          alternativeNo: data.alternativeNo,
-        },
-        address: `${data.firstName} ${data.lastName}, ${data.address}, ${data.city} - ${data.pincode}`,
-        price: parseInt(data.budget || "389") * parseInt(data.bookQuantity || "1"),
-        createdAt: serverTimestamp()
-      });
+      // PHASE 3 INTEGRATION: Convert answers to semantic profile and search
+      const { processBookDiscovery } = await import("../../services/bookDiscovery");
       
-      setOrderComplete(true);
+      const questionnaireAnswers = {
+        emotion: "", // Handled via freeText
+        lifeSituation: "",
+        decisionStyle: "",
+        currentNeed: "",
+        reasons: [],
+        wants: [],
+        bookType: data.bookType || "Any",
+        readBooks: data.readBooks,
+        bookQuantity: data.bookQuantity,
+        freeText: data.vibe + (data.avoidTrigger && data.avoidTrigger !== "None" ? ` (Avoid: ${data.avoidTrigger})` : ""),
+        language: language
+      };
+
+      const result = await processBookDiscovery(questionnaireAnswers);
+
+      navigate("/matches", { state: { result } });
+      
     } catch (err) {
-      console.error("Error saving order: ", err);
-      // Surface error properly rather than failing silently on UI
-      alert("Failed to confirm order. Please ensure you have permission to write to the database and try again.");
+      console.error("Error finding books: ", err);
+      alert("We couldn't find a suitable match from our current collection. Try changing a few preferences and search again.");
     } finally {
       setIsSubmitting(false);
     }
@@ -274,21 +242,6 @@ export default function FreeFlow({ type, language, onBack }: Props) {
                    </div>
                  </div>
                  
-                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 border-b border-gray-100 pb-5">
-                   {cards.map(c => (
-                     <div 
-                       key={c.price} 
-                       onClick={() => setValue("budget", c.price.toString())} 
-                       className={`p-4 border-2 rounded-xl cursor-pointer transition-all duration-200 ${formValues.budget === c.price.toString() ? 'border-[#0E462B] bg-[#0E462B]/5 shadow-md scale-105' : 'border-[#E5E5E0] hover:border-[#0E462B]/30'}`}
-                     >
-                       <div className="flex items-baseline gap-2">
-                         <h3 className="text-2xl font-black text-gray-900 tracking-tight">₹{c.price}</h3>
-                         <span className="text-gray-400 line-through text-sm font-medium">₹{c.cut}</span>
-                       </div>
-                     </div>
-                   ))}
-                 </div>
-
                  <div className="pt-2">
                    <button 
                      onClick={() => setIsDescriptionOpen(!isDescriptionOpen)}
@@ -483,86 +436,8 @@ export default function FreeFlow({ type, language, onBack }: Props) {
             <div className="pt-2">
               <div className="flex gap-4">
                 <button onClick={handleBack} disabled={isSubmitting} className="px-6 py-4 font-medium text-gray-500 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50">Back</button>
-                {user ? (
-                  <button onClick={handleNext} disabled={isSubmitting} className="flex-1 px-6 py-4 font-bold text-[#e1cfbc] bg-[#0E462B] rounded-lg hover:bg-[#0E462B]/90 shadow-lg disabled:opacity-50 transition-all uppercase tracking-wide">
-                    Proceed to Delivery Details
-                  </button>
-                ) : (
-                  <button onClick={() => {
-                    sessionStorage.setItem("tellex_flow_state", JSON.stringify({
-                      mode: "free",
-                      type,
-                      language,
-                      section: 6,
-                      insight,
-                      formValues: watch()
-                    }));
-                    navigate("/login?redirect=/flow");
-                  }} disabled={isSubmitting} className="flex-1 px-6 py-4 font-bold text-[#0E462B] bg-[#e1cfbc] border-2 border-[#0E462B] rounded-lg hover:bg-[#e1cfbc]/80 shadow-lg disabled:opacity-50 transition-all uppercase tracking-wide">
-                    Login to Continue
-                  </button>
-                )}
-              </div>
-            </div>
-          </motion.div>
-        )}
-
-        {/* SECTION 6 - Delivery Details */}
-        {currentSection === 6 && (
-          <motion.div key="sec-6" variants={slideVariants} initial="initial" animate="enter" exit="exit" className="space-y-8">
-            <h2 className="text-2xl font-bold text-[#0E462B]" style={{ fontFamily: "'Playfair Display', serif" }}>Confirm your Delivery details</h2>
-            
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">First Name</label>
-                <input {...register("firstName")} className="w-full px-4 py-3 border-2 border-[#E5E5E0] rounded-lg focus:border-[#0E462B] outline-none" placeholder="John" />
-                {errors.firstName && <p className="text-red-500 text-xs mt-1">{errors.firstName.message}</p>}
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
-                <input {...register("lastName")} className="w-full px-4 py-3 border-2 border-[#E5E5E0] rounded-lg focus:border-[#0E462B] outline-none" placeholder="Doe" />
-                {errors.lastName && <p className="text-red-500 text-xs mt-1">{errors.lastName.message}</p>}
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Full Address</label>
-              <textarea {...register("address")} className="w-full px-4 py-3 border-2 border-[#E5E5E0] rounded-lg focus:border-[#0E462B] outline-none text-sm resize-none h-20" placeholder="House No, Street, Landmark..." />
-              {errors.address && <p className="text-red-500 text-xs mt-1">{errors.address.message}</p>}
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">City</label>
-                <input {...register("city")} className="w-full px-4 py-3 border-2 border-[#E5E5E0] rounded-lg focus:border-[#0E462B] outline-none" placeholder="Mumbai" />
-                {errors.city && <p className="text-red-500 text-xs mt-1">{errors.city.message}</p>}
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Pincode</label>
-                <input {...register("pincode")} maxLength={6} className="w-full px-4 py-3 border-2 border-[#E5E5E0] rounded-lg focus:border-[#0E462B] outline-none" placeholder="400001" />
-                {errors.pincode && <p className="text-red-500 text-xs mt-1">{errors.pincode.message}</p>}
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">WhatsApp Number</label>
-                <input {...register("whatsapp")} maxLength={10} className="w-full px-4 py-3 border-2 border-[#E5E5E0] rounded-lg focus:border-[#0E462B] outline-none" placeholder="9876543210" />
-                {errors.whatsapp && <p className="text-red-500 text-xs mt-1">{errors.whatsapp.message}</p>}
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Phone No</label>
-                <input {...register("alternativeNo")} maxLength={10} className="w-full px-4 py-3 border-2 border-[#E5E5E0] rounded-lg focus:border-[#0E462B] outline-none" placeholder="9876543210" />
-                {errors.alternativeNo && <p className="text-red-500 text-xs mt-1">{errors.alternativeNo.message}</p>}
-              </div>
-            </div>
-
-            <div className="pt-2">
-              <p className="text-center font-bold text-gray-700 mb-4 text-lg">Payment: COD Only</p>
-              <div className="flex gap-4">
-                <button onClick={handleBack} disabled={isSubmitting} className="px-6 py-4 font-medium text-gray-500 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50">Back</button>
                 <button onClick={handleSubmit(onSubmit)} disabled={isSubmitting} className="flex-1 px-6 py-4 font-bold text-[#e1cfbc] bg-[#0E462B] rounded-lg hover:bg-[#0E462B]/90 shadow-lg disabled:opacity-50 transition-all uppercase tracking-wide">
-                  {isSubmitting ? "Processing Insights..." : "Confirm & Proceed"}
+                  {isSubmitting ? "Finding books that fit..." : "Find Book Matches"}
                 </button>
               </div>
             </div>
